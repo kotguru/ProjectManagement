@@ -1,7 +1,7 @@
 from tkinter import *
 
 MAX_TIME = 50
-NUM_WORKS = 4
+NUM_WORKS = 6
 
 
 class Work:
@@ -207,34 +207,16 @@ if __name__ == '__main__':
             paths.append(cur_len)
             nodes_in_path[cur_len] = cur_nodes
 
-    # root = Tk()
-    # c = Canvas(root, width=100 * NUM_WORKS, height=100 * NUM_WORKS, bg='white')
-    # c.pack()
-    # for i in range(len(nodes_in_path[max(paths)])):
-    #     if i > 0:
-    #         c.create_line(100 * i, 40, 100 * i + 10, 40)
-    #     c.create_rectangle(10 + 100 * i, 10, 100 + 100 * i, 60)
-    #     c.create_text(55 + 100 * i, 30, text=nodes_in_path[max(paths)][i].name)
-    #     # c.create_rectangle(60, 80, 140, 190,
-    #     #
-    #     #                    fill='yellow',
-    #     #                    outline='green',
-    #     # width=3)
-    #     # activedash=(5, 4))
-    # c.create_text(100 * NUM_WORKS - 70, 100 * NUM_WORKS - 30, text="Critical path = " + str(max(paths)))
-    # root.mainloop()
-
-
     max_path = max(paths)
 
     for work in works:
         # if work not in nodes_in_path[max_path]:
         # if work not in nodes_in_path[max_path]:
         leeway(work)
+
         if work in nodes_in_path[max_path]:
             work.late_start = work.early_start
             work.late_end = work.early_end
-
 
         print(work.to_string())
 
@@ -244,5 +226,29 @@ if __name__ == '__main__':
         print(i.name + " -->", end=' ')
 
     print('END')
-
     print("\033[32mCritial path len = " + str(max_path))
+
+    root = Tk()
+    c = Canvas(root, width=100 * NUM_WORKS, height=100 * NUM_WORKS, bg='white')
+    c.pack()
+    for i in range(len(nodes_in_path[max_path][-1::-1])):
+        if i > 0:
+            c.create_line(100 * i, 40, 100 * i + 10, 40)
+        # else:
+        #     if len(nodes_in_path[max_path][-1::-1][i].not_later) > 1:
+        #         for j in range(len(nodes_in_path[max_path][-1::-1][i].not_later)):
+        #             k = nodes_in_path[max_path][-1::-1][i].not_later[j]
+        #             if k not in nodes_in_path[max_path]:
+        #                 c.create_line(100 * i + 50, 60 * (j + 1), 100 * (i + 1) + 10, 40 * (j + 2))
+        #                 c.create_rectangle(100 * (i + 1) + 10, 40 * (j + 2), 100 * (i + 1) + 100 * (i + 1), 40 + 40 * (j + 2))
+        #                 c.create_text(55 + 100 * (i + 1), 30 * (j + 2), text=k.name)
+        c.create_rectangle(10 + 100 * i, 10, 100 + 100 * i, 60)
+        c.create_text(55 + 100 * i, 30, text=nodes_in_path[max_path][-1::-1][i].name)
+        # c.create_rectangle(60, 80, 140, 190,
+        #
+        #                    fill='yellow',
+        #                    outline='green',
+        # width=3)
+        # activedash=(5, 4))
+    c.create_text(100 * NUM_WORKS - 70, 100 * NUM_WORKS - 30, text="Critical path = " + str(max(paths)))
+    root.mainloop()
