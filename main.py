@@ -57,6 +57,14 @@ def later_to_earlier():
                     late_work.not_earlier.append(work)
 
 
+def earlier_to_later():
+    for work in works:
+        if len(work.not_earlier) != 0:
+            for late_work in work.not_earlier:
+                if work not in late_work.not_later:
+                    late_work.not_later.append(work)
+
+
 def critical_path(cur_len, cur_nodes, work):
     current_len = 0
     current_nodes = []
@@ -91,27 +99,62 @@ def max_work(works):
     return index
 
 
-def leeway_helper(work, works_in, early_start, temp_nodes):
+def leeway_helper_to(work, works_in, early_start, temp_nodes):
     temp_nodes.update(work.not_earlier)
     max_index = max_work(work.not_earlier)
+
     if max_index == -1:
         return works_in, early_start, temp_nodes
+
     early_start += work.not_earlier[max_index].duration
     works_in.append(work.not_earlier[max_index])
-    works_in, early_start, temp_nodes = leeway_helper(work.not_earlier[max_index], works_in, early_start, temp_nodes)
+    works_in, early_start, temp_nodes = leeway_helper_to(work.not_earlier[max_index], works_in, early_start, temp_nodes)
+
     return works_in, early_start, temp_nodes
+
+
+def leeway_helper_after(work, works_in, late_start, temp_nodes):
+    temp_nodes.update(work.not_later)
+    max_index = max_work(work.not_later)
+
+    if max_index == -1:
+        return works_in, late_start, temp_nodes
+
+    late_start += work.not_later[max_index].duration
+    works_in.append(work.not_later[max_index])
+    works_in, late_start, temp_nodes = leeway_helper_after(work.not_later[max_index], works_in, late_start, temp_nodes)
+
+    return works_in, late_start, temp_nodes
 
 
 def leeway(work):
     temp_nodes = set(work.not_earlier.copy())
     works_in = list()
     early_start = 0
-    works_in, early_start, temp_nodes = leeway_helper(work, works_in, early_start, temp_nodes)
+
+    works_in, early_start, temp_nodes = leeway_helper_to(work, works_in, early_start, temp_nodes)
+
     for tmp_work in temp_nodes:
         if tmp_work not in works_in:
             works_in.append(tmp_work)
             early_start += tmp_work.duration
+
     work.early_start = early_start
+
+    temp_nodes = set(work.not_later.copy())
+    works_in = list()
+    late_start = 0
+
+    works_in, late_start, temp_nodes = leeway_helper_after(work, works_in, late_start, temp_nodes)
+
+    for tmp_work in temp_nodes:
+        if tmp_work not in works_in:
+            works_in.append(tmp_work)
+            late_start += tmp_work.duration
+
+    work.late_start = max_path - late_start - work.duration
+    work.late_end = max_path
+    work.early_end = work.early_start + work.duration
 
 
 if __name__ == '__main__':
@@ -120,6 +163,8 @@ if __name__ == '__main__':
     T2 = Work('Work 2', duration=8)
     T3 = Work('Work 3', duration=7)
     T4 = Work('Work 4', duration=10)
+    T5 = Work('Work 5', duration=2)
+    T6 = Work('Work 6', duration=1)
 
     T1.not_earlier = [T3, T2]
     T1.not_later = [T4]
@@ -128,15 +173,20 @@ if __name__ == '__main__':
     T2.not_later = [T4]
 
     T3.not_earlier = []
-    T3.not_later = []
+    T3.not_later = [T5]
 
     T4.not_earlier = [T1, T2, T3]
     T4.not_later = []
+
+    # T5.not_earlier = [T1, T2, T3]
+    T6.not_earlier = [T5]
 
     works.append(T1)
     works.append(T2)
     works.append(T3)
     works.append(T4)
+    works.append(T5)
+    works.append(T6)
 
     paths = list()
     nodes_in_path = dict()
@@ -144,6 +194,7 @@ if __name__ == '__main__':
 
     cur_len = 0
     later_to_earlier()
+    earlier_to_later()
 
     for work in works:
         cur_len = work.duration
@@ -180,6 +231,11 @@ if __name__ == '__main__':
         # if work not in nodes_in_path[max_path]:
         # if work not in nodes_in_path[max_path]:
         leeway(work)
+        if work in nodes_in_path[max_path]:
+            work.late_start = work.early_start
+            work.late_end = work.early_end
+
+
         print(work.to_string())
 
     print("\033[30mCritial path: \033[33m")
