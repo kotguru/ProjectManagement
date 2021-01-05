@@ -1,6 +1,6 @@
 from tkinter import *
 
-# MAX_TIME = 20
+MAX_TIME = 50
 NUM_WORKS = 4
 
 
@@ -14,10 +14,22 @@ class Work:
         self.duration = duration
         self.not_earlier = not_earlier
         self.not_later = not_later
+        self.early_start = 0
+        self.late_start = 0
+        self.early_end = MAX_TIME
+        self.late_end = MAX_TIME
 
     def to_string(self):
-        return str('\033[33mWork {};\nDuration = {}\nNot later than: {}\n'
-                   'Not earlier than: {}\n'.format(self.name, self.duration, self.not_later, self.not_earlier))
+        return str('\033[36m{}:\n'
+                   'Duration = {}\n'
+                   'Not later than: {}\n'
+                   'Not earlier than: {}\n'
+                   'Early start = {}\n'
+                   'Late start = {}\n'
+                   'Early end = {}\n'
+                   'Late end = {};\n'.format(self.name, self.duration, [self.not_later[i].name for i in range(len(self.not_later))],
+                                             [self.not_earlier[i].name for i in range(len(self.not_earlier))], self.early_start,
+                                            self.late_start, self.early_end, self.late_end))
 
 
 def init_works():
@@ -37,10 +49,21 @@ def input_data_parser(in_str):
     return [name, in_str[start_out + 2: end_out - 2], in_str[start_in:]]
 
 
+def later_to_earlier():
+    for work in works:
+        if len(work.not_later) != 0:
+            for late_work in work.not_later:
+                if work not in late_work.not_earlier:
+                    late_work.not_earlier.append(work)
+
+
 def critical_path(cur_len, cur_nodes, work):
     current_len = 0
     current_nodes = []
     for prev_work in work.not_earlier:
+        # if flag:
+        #     work.early_start += max([work.not_earlier[i].duration for i in range(len(work.not_earlier))])
+        #     flag = False
         current_len = cur_len
         current_nodes = cur_nodes.copy()
 
@@ -54,6 +77,41 @@ def critical_path(cur_len, cur_nodes, work):
         #             nodes_in_path[cur_len] = tmp_nodes_in_path[cur_len]
         else:
             critical_path(current_len, current_nodes, prev_work)
+
+
+def max_work(works):
+    max_len = 0
+    index = 0
+    if len(works) == 0:
+        return -1
+    for i in range(len(works)):
+        if works[i].duration > max_len:
+            max_len = works[i].duration
+            index = i
+    return index
+
+
+def leeway_helper(work, works_in, early_start, temp_nodes):
+    temp_nodes.update(work.not_earlier)
+    max_index = max_work(work.not_earlier)
+    if max_index == -1:
+        return works_in, early_start, temp_nodes
+    early_start += work.not_earlier[max_index].duration
+    works_in.append(work.not_earlier[max_index])
+    works_in, early_start, temp_nodes = leeway_helper(work.not_earlier[max_index], works_in, early_start, temp_nodes)
+    return works_in, early_start, temp_nodes
+
+
+def leeway(work):
+    temp_nodes = set(work.not_earlier.copy())
+    works_in = list()
+    early_start = 0
+    works_in, early_start, temp_nodes = leeway_helper(work, works_in, early_start, temp_nodes)
+    for tmp_work in temp_nodes:
+        if tmp_work not in works_in:
+            works_in.append(tmp_work)
+            early_start += tmp_work.duration
+    work.early_start = early_start
 
 
 if __name__ == '__main__':
@@ -85,6 +143,7 @@ if __name__ == '__main__':
     cur_nodes = list()
 
     cur_len = 0
+    later_to_earlier()
 
     for work in works:
         cur_len = work.duration
@@ -97,19 +156,37 @@ if __name__ == '__main__':
             paths.append(cur_len)
             nodes_in_path[cur_len] = cur_nodes
 
-    root = Tk()
-    c = Canvas(root, width=100 * NUM_WORKS, height=100 * NUM_WORKS, bg='white')
-    c.pack()
-    for i in range(len(nodes_in_path[max(paths)])):
-        if i > 0:
-            c.create_line(100 * i, 40, 100 * i + 10, 40)
-        c.create_rectangle(10 + 100 * i, 10, 100 + 100 * i, 60)
-        c.create_text(55 + 100 * i, 30, text=nodes_in_path[max(paths)][i].name)
-        # c.create_rectangle(60, 80, 140, 190,
-        #
-        #                    fill='yellow',
-        #                    outline='green',
-        # width=3)
-        # activedash=(5, 4))
-    c.create_text(100 * NUM_WORKS - 70, 100 * NUM_WORKS - 30, text="Critical path = " + str(max(paths)))
-    root.mainloop()
+    # root = Tk()
+    # c = Canvas(root, width=100 * NUM_WORKS, height=100 * NUM_WORKS, bg='white')
+    # c.pack()
+    # for i in range(len(nodes_in_path[max(paths)])):
+    #     if i > 0:
+    #         c.create_line(100 * i, 40, 100 * i + 10, 40)
+    #     c.create_rectangle(10 + 100 * i, 10, 100 + 100 * i, 60)
+    #     c.create_text(55 + 100 * i, 30, text=nodes_in_path[max(paths)][i].name)
+    #     # c.create_rectangle(60, 80, 140, 190,
+    #     #
+    #     #                    fill='yellow',
+    #     #                    outline='green',
+    #     # width=3)
+    #     # activedash=(5, 4))
+    # c.create_text(100 * NUM_WORKS - 70, 100 * NUM_WORKS - 30, text="Critical path = " + str(max(paths)))
+    # root.mainloop()
+
+
+    max_path = max(paths)
+
+    for work in works:
+        # if work not in nodes_in_path[max_path]:
+        # if work not in nodes_in_path[max_path]:
+        leeway(work)
+        print(work.to_string())
+
+    print("\033[30mCritial path: \033[33m")
+    print("START -->", end=' ')
+    for i in nodes_in_path[max_path][-1::-1]:
+        print(i.name + " -->", end=' ')
+
+    print('END')
+
+    print("\033[32mCritial path len = " + str(max_path))
