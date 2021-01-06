@@ -1,7 +1,7 @@
 from tkinter import *
 
 MAX_TIME = 50
-NUM_WORKS = 6
+# NUM_WORKS
 
 
 class Work:
@@ -32,21 +32,58 @@ class Work:
                                             self.late_start, self.early_end, self.late_end))
 
 
-def init_works():
+def init_works(num_works):
     start_work = list()
-    for i in range(NUM_WORKS):
+    for i in range(num_works):
         T = Work('Work ' + str(i+1))
         start_work.append(T)
     return start_work
 
 
-def input_data_parser(in_str):
-    name = in_str[:2]
-    start_out = in_str.find(":")
-    end_out = in_str.find(">")
-    start_in = end_out + 2
+def input_data_parser(num_works, lines):
+    for i in range(num_works):
+        duration_start = lines[i].find("-")
+        start_out = lines[i].find(":")
+        end_out = lines[i].find(">")
+        start_in = end_out + 2
 
-    return [name, in_str[start_out + 2: end_out - 2], in_str[start_in:]]
+        duration = lines[i][duration_start + 2: start_out]
+        works[i].duration = int(duration)
+
+        out_str = lines[i][start_out + 2: end_out - 2]
+        if len(out_str) == 0:
+            out_str_split = []
+        else:
+            out_str_split = out_str.split(" ")
+        _out = list(map(int, out_str_split))
+        for j in _out:
+            works[i].not_earlier.append(works[j - 1])
+
+        in_str = lines[i][start_in:]
+        if len(in_str) == 0:
+            in_str_split = []
+        else:
+            in_str_split = in_str.split(" ")
+        _in = list(map(int, in_str_split))
+        for j in _in:
+            works[i].not_later.append(works[j - 1])
+
+        # T1.not_earlier = [T3, T2]
+        # T1.not_later = [T4]
+        #
+        # T2.not_earlier = [T3]
+        # T2.not_later = [T4]
+        #
+        # T3.not_earlier = []
+        # T3.not_later = [T5]
+        #
+        # T4.not_earlier = [T1, T2, T3]
+        # T4.not_later = []
+        #
+        # # T5.not_earlier = [T1, T2, T3]
+        # T6.not_earlier = [T5]
+
+    # return [name, in_str[start_out + 2: end_out - 2], in_str[start_in:]]
 
 
 def later_to_earlier():
@@ -158,35 +195,42 @@ def leeway(work):
 
 
 if __name__ == '__main__':
-    works = list()
-    T1 = Work('Work 1', duration=3)
-    T2 = Work('Work 2', duration=8)
-    T3 = Work('Work 3', duration=7)
-    T4 = Work('Work 4', duration=10)
-    T5 = Work('Work 5', duration=2)
-    T6 = Work('Work 6', duration=1)
+    with open('Configuration', 'r') as f:
+        lines = f.read().splitlines()
+    with open('Configuration', 'r') as f:
+        num_works = sum(1 for _ in f)
 
-    T1.not_earlier = [T3, T2]
-    T1.not_later = [T4]
+    works = init_works(num_works)
+    input_data_parser(num_works, lines)
+    # works = list()
+    # T1 = Work('Work 1', duration=3)
+    # T2 = Work('Work 2', duration=8)
+    # T3 = Work('Work 3', duration=7)
+    # T4 = Work('Work 4', duration=10)
+    # T5 = Work('Work 5', duration=2)
+    # T6 = Work('Work 6', duration=1)
 
-    T2.not_earlier = [T3]
-    T2.not_later = [T4]
+    # T1.not_earlier = [T3, T2]
+    # T1.not_later = [T4]
+    #
+    # T2.not_earlier = [T3]
+    # T2.not_later = [T4]
+    #
+    # T3.not_earlier = []
+    # T3.not_later = [T5]
+    #
+    # T4.not_earlier = [T1, T2, T3]
+    # T4.not_later = []
+    #
+    # # T5.not_earlier = [T1, T2, T3]
+    # T6.not_earlier = [T5]
 
-    T3.not_earlier = []
-    T3.not_later = [T5]
-
-    T4.not_earlier = [T1, T2, T3]
-    T4.not_later = []
-
-    # T5.not_earlier = [T1, T2, T3]
-    T6.not_earlier = [T5]
-
-    works.append(T1)
-    works.append(T2)
-    works.append(T3)
-    works.append(T4)
-    works.append(T5)
-    works.append(T6)
+    # works.append(T1)
+    # works.append(T2)
+    # works.append(T3)
+    # works.append(T4)
+    # works.append(T5)
+    # works.append(T6)
 
     paths = list()
     nodes_in_path = dict()
@@ -229,7 +273,7 @@ if __name__ == '__main__':
     print("\033[32mCritial path len = " + str(max_path))
 
     root = Tk()
-    c = Canvas(root, width=100 * NUM_WORKS, height=100 * NUM_WORKS, bg='white')
+    c = Canvas(root, width=100 * num_works, height=100 * num_works, bg='white')
     c.pack()
     for i in range(len(nodes_in_path[max_path][-1::-1])):
         if i > 0:
@@ -250,5 +294,5 @@ if __name__ == '__main__':
         #                    outline='green',
         # width=3)
         # activedash=(5, 4))
-    c.create_text(100 * NUM_WORKS - 70, 100 * NUM_WORKS - 30, text="Critical path = " + str(max(paths)))
+    c.create_text(100 * num_works - 70, 100 * num_works - 30, text="Critical path = " + str(max(paths)))
     root.mainloop()
